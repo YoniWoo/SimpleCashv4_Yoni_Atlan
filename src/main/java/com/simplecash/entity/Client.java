@@ -23,6 +23,8 @@ public class Client {
     private String codePostal;
     private String ville;
     private String telephone;
+
+    // "PARTICULIER" ou "ENTREPRISE"
     private String typeClient;
 
     @ManyToOne

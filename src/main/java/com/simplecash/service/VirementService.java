@@ -1,8 +1,9 @@
 package com.simplecash.service;
 
-import java.math.BigDecimal;
+import com.simplecash.dto.VirementDTO;
+import com.simplecash.dto.VirementResultDTO;
 
 public interface VirementService {
 
-    void virement(Long compteSourceId, Long compteDestinationId, BigDecimal montant);
+    VirementResultDTO virement(VirementDTO request);
 }

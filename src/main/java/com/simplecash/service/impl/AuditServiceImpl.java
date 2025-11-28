@@ -1,63 +1,78 @@
 package com.simplecash.service.impl;
 
-import com.simplecash.entity.Client;
+import com.simplecash.dto.AuditGlobalDTO;
+import com.simplecash.dto.CompteDTO;
 import com.simplecash.entity.Compte;
+import com.simplecash.mapper.CompteMapper;
 import com.simplecash.repository.ClientRepository;
 import com.simplecash.repository.CompteRepository;
 import com.simplecash.service.AuditService;
-import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
-@Transactional
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class AuditServiceImpl implements AuditService {
 
-    private final ClientRepository clientRepository;
     private final CompteRepository compteRepository;
+    private final ClientRepository clientRepository;
+    private final CompteMapper compteMapper;
 
-    public AuditServiceImpl(ClientRepository clientRepository,
-                            CompteRepository compteRepository) {
-        this.clientRepository = clientRepository;
-        this.compteRepository = compteRepository;
+    // Seuils d'anomalie (tu peux les documenter dans ton rapport)
+    private static final BigDecimal SEUIL_PARTICULIER = BigDecimal.valueOf(-5000);
+    private static final BigDecimal SEUIL_ENTREPRISE = BigDecimal.valueOf(-50000);
+
+    @Override
+    public List<CompteDTO> getComptesParticuliersDebiteursAnormaux() {
+        List<Compte> comptes = compteRepository
+                .findByClientTypeClientIgnoreCaseAndSoldeLessThan("PARTICULIER", SEUIL_PARTICULIER);
+        return comptes.stream()
+                .map(compteMapper::toDto)
+                .toList();
     }
 
     @Override
-    public List<Compte> getComptesParticuliersDebiteursAnormaux() {
-        List<Client> clients = clientRepository.findByTypeClientIgnoreCase("PARTICULIER");
-        return clients.stream()
-                .flatMap(c -> c.getComptes().stream())
-                .filter(c -> c.getSolde().compareTo(BigDecimal.valueOf(-5000)) < 0)
-                .collect(Collectors.toList());
+    public List<CompteDTO> getComptesEntreprisesDebiteursAnormaux() {
+        List<Compte> comptes = compteRepository
+                .findByClientTypeClientIgnoreCaseAndSoldeLessThan("ENTREPRISE", SEUIL_ENTREPRISE);
+        return comptes.stream()
+                .map(compteMapper::toDto)
+                .toList();
     }
 
     @Override
-    public List<Compte> getComptesEntreprisesDebiteursAnormaux() {
-        List<Client> clients = clientRepository.findByTypeClientIgnoreCase("ENTREPRISE");
-        return clients.stream()
-                .flatMap(c -> c.getComptes().stream())
-                .filter(c -> c.getSolde().compareTo(BigDecimal.valueOf(-50000)) < 0)
-                .collect(Collectors.toList());
-    }
+    public AuditGlobalDTO getAuditGlobal() {
+        var tousLesComptes = compteRepository.findAll();
 
-    @Override
-    public AuditResult getAuditGlobal() {
-        List<Compte> comptes = compteRepository.findAll();
+        long nbClients = clientRepository.count();
+        long nbComptes = tousLesComptes.size();
 
-        AuditResult result = new AuditResult();
-        result.totalSolde = comptes.stream()
+        // somme des soldes
+        var soldeTotal = tousLesComptes.stream()
                 .map(Compte::getSolde)
-                .mapToDouble(BigDecimal::doubleValue)
-                .sum();
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Version simplifiée : on n’a pas la notion de crédit/débit séparés,
-        // donc on ne remplit que totalSolde
-        result.totalCredits = 0;
-        result.totalDebits = 0;
+        long nbParticuliersAnormaux = tousLesComptes.stream()
+                .filter(c -> "PARTICULIER".equalsIgnoreCase(c.getClient().getTypeClient()))
+                .filter(c -> c.getSolde().compareTo(SEUIL_PARTICULIER) < 0)
+                .count();
 
-        return result;
+        long nbEntreprisesAnormaux = tousLesComptes.stream()
+                .filter(c -> "ENTREPRISE".equalsIgnoreCase(c.getClient().getTypeClient()))
+                .filter(c -> c.getSolde().compareTo(SEUIL_ENTREPRISE) < 0)
+                .count();
+
+        return new AuditGlobalDTO(
+                nbClients,
+                nbComptes,
+                soldeTotal,
+                nbParticuliersAnormaux,
+                nbEntreprisesAnormaux
+        );
     }
 }

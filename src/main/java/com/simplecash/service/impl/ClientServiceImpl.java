@@ -1,56 +1,75 @@
 package com.simplecash.service.impl;
 
+import com.simplecash.dto.ClientCreateDTO;
+import com.simplecash.dto.ClientDTO;
+import com.simplecash.dto.ClientUpdateDTO;
 import com.simplecash.entity.Client;
+import com.simplecash.entity.Conseiller;
+import com.simplecash.mapper.ClientMapper;
 import com.simplecash.repository.ClientRepository;
 import com.simplecash.repository.ConseillerRepository;
 import com.simplecash.service.ClientService;
-import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class ClientServiceImpl implements ClientService {
 
     private final ClientRepository clientRepository;
     private final ConseillerRepository conseillerRepository;
+    private final ClientMapper clientMapper;
 
-    public ClientServiceImpl(ClientRepository clientRepository,
-                             ConseillerRepository conseillerRepository) {
-        this.clientRepository = clientRepository;
-        this.conseillerRepository = conseillerRepository;
+    @Override
+    public List<ClientDTO> getAll() {
+        return clientRepository.findAll()
+                .stream()
+                .map(clientMapper::toDto)
+                .toList();
     }
 
     @Override
-    public Client create(Client client) {
-        // Optionnel : vérifier conseiller, limite 10 clients...
-        return clientRepository.save(client);
+    public ClientDTO create(ClientCreateDTO createDto) {
+        Client client = clientMapper.toEntity(createDto);
+
+        // gestion du conseiller ici
+        if (createDto.conseillerId() != null) {
+            Conseiller conseiller = conseillerRepository.findById(createDto.conseillerId())
+                    .orElseThrow(() -> new RuntimeException("Conseiller introuvable pour id " + createDto.conseillerId()));
+            client.setConseiller(conseiller);
+        }
+
+        Client saved = clientRepository.save(client);
+        return clientMapper.toDto(saved);
     }
 
     @Override
-    public Client update(Long id, Client client) {
-        Client existing = getById(id);
-        existing.setNom(client.getNom());
-        existing.setPrenom(client.getPrenom());
-        existing.setAdresse(client.getAdresse());
-        existing.setCodePostal(client.getCodePostal());
-        existing.setVille(client.getVille());
-        existing.setTelephone(client.getTelephone());
-        existing.setTypeClient(client.getTypeClient());
-        existing.setConseiller(client.getConseiller());
-        return clientRepository.save(existing);
-    }
-
-    @Override
-    public Client getById(Long id) {
+    public Optional<ClientDTO> getById(Long id) {
         return clientRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Client introuvable avec id " + id));
+                .map(clientMapper::toDto);
     }
 
     @Override
-    public List<Client> getAll() {
-        return clientRepository.findAll();
+    public Optional<ClientDTO> update(Long id, ClientUpdateDTO updateDto) {
+        return clientRepository.findById(id)
+                .map(existing -> {
+                    // appliquer les champs simples
+                    clientMapper.updateEntity(existing, updateDto);
+
+                    // gérer éventuellement le conseiller
+                    if (updateDto.conseillerId() != null) {
+                        Conseiller conseiller = conseillerRepository.findById(updateDto.conseillerId())
+                                .orElseThrow(() -> new RuntimeException("Conseiller introuvable pour id " + updateDto.conseillerId()));
+                        existing.setConseiller(conseiller);
+                    }
+
+                    return clientMapper.toDto(existing);
+                });
     }
 
     @Override
@@ -59,7 +78,10 @@ public class ClientServiceImpl implements ClientService {
     }
 
     @Override
-    public List<Client> getByConseiller(Long conseillerId) {
-        return clientRepository.findByConseillerId(conseillerId);
+    public List<ClientDTO> getByConseiller(Long conseillerId) {
+        return clientRepository.findByConseillerId(conseillerId)
+                .stream()
+                .map(clientMapper::toDto)
+                .toList();
     }
 }

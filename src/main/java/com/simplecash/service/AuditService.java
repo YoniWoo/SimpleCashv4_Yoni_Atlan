@@ -1,20 +1,15 @@
 package com.simplecash.service;
 
-import com.simplecash.entity.Compte;
+import com.simplecash.dto.AuditGlobalDTO;
+import com.simplecash.dto.CompteDTO;
 
 import java.util.List;
 
 public interface AuditService {
 
-    List<Compte> getComptesParticuliersDebiteursAnormaux();
+    List<CompteDTO> getComptesParticuliersDebiteursAnormaux();
 
-    List<Compte> getComptesEntreprisesDebiteursAnormaux();
+    List<CompteDTO> getComptesEntreprisesDebiteursAnormaux();
 
-    AuditResult getAuditGlobal();
-
-    class AuditResult {
-        public double totalCredits;
-        public double totalDebits;
-        public double totalSolde;
-    }
+    AuditGlobalDTO getAuditGlobal();
 }

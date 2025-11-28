@@ -1,21 +1,27 @@
 package com.simplecash.service;
 
-import com.simplecash.entity.Compte;
+import com.simplecash.dto.CompteCreateDTO;
+import com.simplecash.dto.CompteDTO;
+import com.simplecash.dto.CompteUpdateDTO;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 public interface CompteService {
 
-    Compte create(Compte compte, Long clientId);
+    // Créer un compte pour un client donné
+    CompteDTO create(Long clientId, CompteCreateDTO dto);
 
-    Compte getById(Long id);
+    Optional<CompteDTO> getById(Long id);
 
-    List<Compte> getByClient(Long clientId);
+    List<CompteDTO> getByClient(Long clientId);
 
-    Compte credit(Long compteId, BigDecimal montant);
+    Optional<CompteDTO> update(Long id, CompteUpdateDTO dto);
 
-    Compte debit(Long compteId, BigDecimal montant);
+    CompteDTO credit(Long compteId, BigDecimal montant);
 
-    void delete(Long compteId);
+    CompteDTO debit(Long compteId, BigDecimal montant);
+
+    void delete(Long id); // suppression seulement si solde = 0
 }

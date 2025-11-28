@@ -1,20 +1,23 @@
 package com.simplecash.service;
 
-import com.simplecash.entity.Client;
+import com.simplecash.dto.ClientCreateDTO;
+import com.simplecash.dto.ClientDTO;
+import com.simplecash.dto.ClientUpdateDTO;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ClientService {
 
-    Client create(Client client);
+    List<ClientDTO> getAll();
 
-    Client update(Long id, Client client);
+    ClientDTO create(ClientCreateDTO createDTO);
 
-    Client getById(Long id);
+    Optional<ClientDTO> getById(Long id);
 
-    List<Client> getAll();
+    Optional<ClientDTO> update(Long id, ClientUpdateDTO updateDTO);
 
     void delete(Long id);
 
-    List<Client> getByConseiller(Long conseillerId);
+    List<ClientDTO> getByConseiller(Long conseillerId);
 }

@@ -22,6 +22,7 @@ public class Compte {
     private BigDecimal solde;
     private LocalDate dateOuverture;
     private String typeCompte;
+
     @ManyToOne
     @JoinColumn(name = "client_id")
     private Client client;
