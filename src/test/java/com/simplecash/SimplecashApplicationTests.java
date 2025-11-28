@@ -1,4 +1,4 @@
-package com.simplecash.simplecash;
+package com.simplecash;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
