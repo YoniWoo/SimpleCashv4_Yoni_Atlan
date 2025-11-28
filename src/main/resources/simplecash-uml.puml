@@ -1,0 +1,68 @@
+@startuml
+title Modèle métier SimpleCash
+
+enum TypeClient {
+  PARTICULIER
+  ENTREPRISE
+}
+
+class Agence {
+  - id : String  <<PK>>  // 5 caractères
+  - dateCreation : LocalDate
+}
+
+class Gerant {
+  - id : Long <<PK>>
+  - nom : String
+  - prenom : String
+}
+
+class Conseiller {
+  - id : Long <<PK>>
+  - nom : String
+  - prenom : String
+}
+
+class Client {
+  - id : Long <<PK>>
+  - nom : String
+  - prenom : String
+  - adresse : String
+  - codePostal : String
+  - ville : String
+  - telephone : String
+  - typeClient : TypeClient
+}
+
+abstract class Compte {
+  - id : Long <<PK>>
+  - numero : String
+  - solde : BigDecimal
+  - dateOuverture : LocalDate
+}
+
+class CompteCourant {
+  - decouvertAutorise : BigDecimal = 1000
+}
+
+class CompteEpargne {
+  - tauxRemuneration : BigDecimal = 0.03
+}
+
+class CarteBancaire {
+  - id : Long <<PK>>
+  - typeCarte : String  // Visa Electron, Visa Premier
+  - active : boolean
+}
+
+' Relations
+Agence "1" -- "1" Gerant : dirige >
+Agence "1" -- "0..*" Conseiller : emploie >
+Conseiller "1" -- "0..10" Client : suit >
+Client "1" -- "0..*" Compte : possède >
+Client "1" -- "0..*" CarteBancaire : détient >
+
+Compte <|-- CompteCourant
+Compte <|-- CompteEpargne
+
+@enduml
